@@ -16,7 +16,7 @@ updated by hyjun0407 : https://mylostchristmas.tistory.com/
 
 * glibc 2.23 <= 2.39 (x86, x64)
 
-Support for version 2.31 and above is currently experimental, and errors may occur. So far, only the Safe-Linking and Arena-Top issues have been resolved, and there may be additional features that need to be fixed. We welcome your contributions to the updates!
+Support for version 2.31 and above is currently experimental, and errors may occur. So far, only the Safe-Linking and Top-Arena issues have been resolved, and there may be additional features that need to be fixed. We welcome your contributions to the updates!
 
 ## Features
 

@@ -1,20 +1,22 @@
-# HeapViewer
+# HeapViewer - Reborn
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-An IDA Pro plugin to examine the heap, focused on exploit development.
+An IDA Pro plugin to examine the heap, focused on exploit development. 
 
 Currently supports the glibc malloc implementation (ptmalloc2).
 
 [3rd place winner of the 2018 Hex-Rays Plugin Contest](https://www.hex-rays.com/contests/2018/index.shtml)
 
-
+updated by hyjun0407 : https://mylostchristmas.tistory.com/
 ## Requirements
 
-* IDA Pro >= 7.0
+* IDA Pro >= 7.0 (9.0 Support)
 
 ## Tested on
 
-* glibc 2.23 <= 2.31 (x86, x64)
+* glibc 2.23 <= 2.39 (x86, x64)
+
+Support for version 2.31 and above is currently experimental, and errors may occur. So far, only the Safe-Linking and Arena-Top issues have been resolved, and there may be additional features that need to be fixed. We welcome your contributions to the updates!
 
 ## Features
 

@@ -45,21 +45,21 @@ class BinGraph(idaapi.GraphViewer):
 
     def chunk_info(self, chunk_addr, chunk):
         line =  idaapi.COLSTR("Chunk ", idaapi.SCOLOR_NUMBER)
-        line += idaapi.COLSTR("0x%x\n\n" % (chunk_addr), idaapi.SCOLOR_INSN)
+        line += idaapi.COLSTR("0x%x\n\n" % (chunk_addr), idaapi.SCOLOR_DEFAULT)
         line += idaapi.COLSTR("size: 0x%x\nfd: 0x%x - %s" % \
-                (chunk.size, chunk.fd, idc.get_segm_name(chunk.fd)), SCOLOR_DEFAULT)
+                (chunk.size, chunk.fd, idc.get_segm_name(chunk.fd)), idaapi.SCOLOR_DEFAULT)
         return line
 
     def tcache_info(self, entry_addr, chunk_addr):        
         line =  idaapi.COLSTR("entry: ", idaapi.SCOLOR_NUMBER)
-        line += idaapi.COLSTR("0x%x\n" % (entry_addr), idaapi.SCOLOR_INSN)
+        line += idaapi.COLSTR("0x%x\n" % (entry_addr), idaapi.SCOLOR_DEFAULT)
         line += idaapi.COLSTR("chunk: ", idaapi.SCOLOR_NUMBER)
-        line += idaapi.COLSTR("0x%x" % (chunk_addr), idaapi.SCOLOR_INSN)
+        line += idaapi.COLSTR("0x%x" % (chunk_addr), idaapi.SCOLOR_DEFAULT)
         return line
 
     def bin_info(self, node_title, chunk_addr, chunk, with_size=True):
         line =  idaapi.COLSTR("%s " % node_title, idaapi.SCOLOR_NUMBER)
-        line += idaapi.COLSTR("0x%x\n\n" % chunk_addr, idaapi.SCOLOR_INSN)
+        line += idaapi.COLSTR("0x%x\n\n" % chunk_addr, idaapi.SCOLOR_DEFAULT)
 
         chunk_info = ""
         if with_size:
@@ -94,13 +94,20 @@ class BinGraph(idaapi.GraphViewer):
         id_header = self.AddNode( (True, "fastbin[%x]" % size, "FASTBIN - 0x%02X" % size, None) )  
         id_chunk = id_header
 
-        chain, c_error = self.heap.chunk_chain(fastbin, stop=0, add_stop=False)
+        chain, c_error = self.heap.fast_chunk_chain(fastbin, stop=0, add_stop=False)
+
 
         for i, chunk_addr in enumerate(chain):
             chunk_info = self.heap.get_chunk(chunk_addr)
+            chunk_info_str = str(chunk_info)
+            fd_index = chunk_info_str.find("fd: ")
+            if fd_index != -1:
+                fd_end_index = chunk_info_str.find("\n", fd_index)
+                chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
+
 
             prev_chunk = id_chunk
-            id_chunk = self.AddNode( (True, str(chunk_info), self.chunk_info(chunk_addr, chunk_info), chunk_addr) )
+            id_chunk = self.AddNode( (True, chunk_info_str, self.chunk_info(chunk_addr, chunk_info), chunk_addr) )
             self.AddEdge(prev_chunk, id_chunk)
 
         if c_error: 
@@ -127,15 +134,23 @@ class BinGraph(idaapi.GraphViewer):
 
         chain, c_error = self.heap.tcache_chain(tcache_entry['next'], add_stop=False)
 
+        print(chain)
+
         for i, mem_addr in enumerate(chain):
             chunk_addr = self.heap.mem2chunk(mem_addr)
 
             try:
                 chunk_info = self.heap.get_chunk(chunk_addr)
+                chunk_info_str = str(chunk_info)
+                fd_index = chunk_info_str.find("fd: ")
+                if fd_index != -1:
+                    fd_end_index = chunk_info_str.find("\n", fd_index)
+                    chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
+
                 prev_chunk = id_chunk
 
                 tcache_info = self.tcache_info(mem_addr, chunk_addr)
-                id_chunk = self.AddNode( (True, str(chunk_info), tcache_info, chunk_addr) )
+                id_chunk = self.AddNode( (True, chunk_info_str, tcache_info, chunk_addr) )
                 self.AddEdge(prev_chunk, id_chunk)
 
             except:

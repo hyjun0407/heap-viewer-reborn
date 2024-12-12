@@ -9,6 +9,7 @@ import idaapi
 import json
 
 from idc import *
+from ida_ida import *
 from idaapi import *
 from idautils import *
 from ctypes import *
@@ -143,14 +144,13 @@ def add_malloc_chunk_struct(ptr_size=8):
 
 # --------------------------------------------------------------------------
 def get_arch_ptrsize():
-    info = idaapi.get_inf_structure() 
     ptr_size = None  
-    if info.is_64bit():
-        ptr_size = 8
-    elif info.is_32bit():
+    if ida_ida.inf_is_32bit_exactly():
+        print('32bit')
         ptr_size = 4
     else:
-        raise Exception("Invalid arch")
+        print('64bit')
+        ptr_size = 8
     return ptr_size
 
 # --------------------------------------------------------------------------

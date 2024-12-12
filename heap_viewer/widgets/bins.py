@@ -205,6 +205,7 @@ class BinsWidget(CustomWidget):
             return
 
         bin_cols = self.bin_tables[sender]
+        print(bin_cols) 
         address = int(row[bin_cols['address']].text(), 16)
 
         if bin_cols['size']:
@@ -240,11 +241,16 @@ class BinsWidget(CustomWidget):
         self.show_bin_chain()
 
     def show_chain(self, title, address, size, stop=0):
+        title_tmp = title
         if size:
             title = '%s[0x%02x]' % (title, size)
 
         if address != 0 and address != idc.BADADDR:
-            chain, b_error = self.heap.chunk_chain(address, stop)
+            if title_tmp == 'fastbins':
+                print("fastbins")
+                chain, b_error = self.heap.fast_chunk_chain(address, stop)
+            else:
+                chain, b_error = self.heap.chunk_chain(address, stop)
             html_chain = make_html_chain(title, chain, b_error)
             self.te_chain_info.clear()
             self.te_chain_info.insertHtml(html_chain)

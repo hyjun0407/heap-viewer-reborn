@@ -363,13 +363,46 @@ class Heap(object):
             result.append(stop)
 
         return (result, b_error)
+    
+    
+    def XOR_generic_chain(self, address, offset, stop, add_stop=True, limit=100):
+        count = 0
+        result = [address]
+        b_error = False
 
+        if not is_loaded(address):
+            return (result, True)
+
+        next_addr = self.get_ptr(address + offset) ^ (address >> 12)
+
+        while next_addr != stop and count < limit:
+
+            if result.count(next_addr) >= 2:
+                b_error = True
+                break
+
+            result.append(next_addr)
+            if not is_loaded(next_addr):
+                break
+
+            next_addr = self.get_ptr(next_addr + offset) ^ (next_addr >> 12)
+            count += 1
+
+        if next_addr == stop and add_stop:
+            result.append(stop)
+
+        return (result, b_error)
     def chunk_chain(self, address, stop=0, add_stop=True):
         offset = self.chunk_member_offset('fd')
         return self.generic_chain(address, offset, stop, add_stop)
 
+    def fast_chunk_chain(self, address, stop=0, add_stop=True):
+        offset = self.chunk_member_offset('fd')
+        return self.XOR_generic_chain(address, offset, stop, add_stop)
+
     def tcache_chain(self, address, add_stop=True):
-        return self.generic_chain(address, 0, 0, add_stop) # offset 0: next
+        print(add_stop)
+        return self.XOR_generic_chain(address, 0, 0, add_stop) # offset 0: next
 
     def get_struct(self, address, struct_type):
         assert idaapi.is_loaded(address) == True, "Can't access memory at 0x%x" % address
@@ -433,7 +466,7 @@ class Heap(object):
             fastbins = {}
         for size, fast_chunk in fastbins.items():
             if fast_chunk:
-                chain, b_error = self.chunk_chain(fast_chunk)
+                chain, b_error = self.fast_chunk_chain(fast_chunk)
                 chunks.extend(chain)
 
         return list(filter(lambda x: x != 0, chunks))
@@ -524,11 +557,11 @@ class Heap(object):
             if real_size == 0:
                 status = 'attempt get 0 size chunk'
                 stop_parse = True
-            elif  chunk_addr + real_size >= heap_end:
-                status = 'attempt get ptr overflowed chunk'
-                stop_parse = True
             elif chunk_addr == arena.top:
                 status = 'arena->top'
+                stop_parse = True
+            elif  chunk_addr + real_size >= heap_end:
+                status = 'attempt get ptr overflowed chunk'
                 stop_parse = True
 
             else:

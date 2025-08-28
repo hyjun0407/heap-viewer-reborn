@@ -401,8 +401,10 @@ class Heap(object):
         return self.XOR_generic_chain(address, offset, stop, add_stop)
 
     def tcache_chain(self, address, add_stop=True):
-        print(add_stop)
-        return self.XOR_generic_chain(address, 0, 0, add_stop) # offset 0: next
+        if config.libc_version >= "2.32":
+            return self.XOR_generic_chain(address, 0, 0, add_stop) # offset 0: next
+        else:
+            return self.generic_chain(address, 0, 0, add_stop)
 
     def get_struct(self, address, struct_type):
         assert idaapi.is_loaded(address) == True, "Can't access memory at 0x%x" % address
@@ -466,7 +468,10 @@ class Heap(object):
             fastbins = {}
         for size, fast_chunk in fastbins.items():
             if fast_chunk:
-                chain, b_error = self.fast_chunk_chain(fast_chunk)
+                if config.libc_version >= "2.32":
+                    chain, b_error = self.fast_chunk_chain(fast_chunk)
+                else: 
+                    chain, b_error = self.chunk_chain(fast_chunk)
                 chunks.extend(chain)
 
         return list(filter(lambda x: x != 0, chunks))

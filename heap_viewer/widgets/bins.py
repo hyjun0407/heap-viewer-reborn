@@ -246,8 +246,7 @@ class BinsWidget(CustomWidget):
             title = '%s[0x%02x]' % (title, size)
 
         if address != 0 and address != idc.BADADDR:
-            if title_tmp == 'fastbins':
-                print("fastbins")
+            if title_tmp == 'fastbins' and config.libc_version >= "2.32":
                 chain, b_error = self.heap.fast_chunk_chain(address, stop)
             else:
                 chain, b_error = self.heap.chunk_chain(address, stop)

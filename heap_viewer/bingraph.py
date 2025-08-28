@@ -6,6 +6,7 @@
 
 import idc
 import idaapi
+from heap_viewer import config
 
 # --------------------------------------------------------------------------
 class BinGraph(idaapi.GraphViewer):
@@ -94,21 +95,28 @@ class BinGraph(idaapi.GraphViewer):
         id_header = self.AddNode( (True, "fastbin[%x]" % size, "FASTBIN - 0x%02X" % size, None) )  
         id_chunk = id_header
 
-        chain, c_error = self.heap.fast_chunk_chain(fastbin, stop=0, add_stop=False)
+        if config.libc_version >= "2.32":
+            chain, c_error = self.heap.fast_chunk_chain(fastbin, stop=0, add_stop=False)
+        else:
+            chain, c_error = self.heap.chunk_chain(fastbin, stop=0, add_stop=False)
 
-
-        for i, chunk_addr in enumerate(chain):
-            chunk_info = self.heap.get_chunk(chunk_addr)
-            chunk_info_str = str(chunk_info)
-            fd_index = chunk_info_str.find("fd: ")
-            if fd_index != -1:
-                fd_end_index = chunk_info_str.find("\n", fd_index)
-                chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
-
-
-            prev_chunk = id_chunk
-            id_chunk = self.AddNode( (True, chunk_info_str, self.chunk_info(chunk_addr, chunk_info), chunk_addr) )
-            self.AddEdge(prev_chunk, id_chunk)
+        if config.libc_version >= "2.32":
+            for i, chunk_addr in enumerate(chain):
+                chunk_info = self.heap.get_chunk(chunk_addr)
+                chunk_info_str = str(chunk_info)
+                fd_index = chunk_info_str.find("fd: ")
+                if fd_index != -1:
+                    fd_end_index = chunk_info_str.find("\n", fd_index)
+                    chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
+                prev_chunk = id_chunk
+                id_chunk = self.AddNode( (True, chunk_info_str, self.chunk_info(chunk_addr, chunk_info), chunk_addr) )
+                self.AddEdge(prev_chunk, id_chunk)
+        else:
+            for i, chunk_addr in enumerate(chain):
+                chunk_info = self.heap.get_chunk(chunk_addr)
+                prev_chunk = id_chunk
+                id_chunk = self.AddNode( (True, str(chunk_info), self.chunk_info(chunk_addr, chunk_info), chunk_addr) )
+                self.AddEdge(prev_chunk, id_chunk)
 
         if c_error: 
             self.add_error_edge(id_chunk)          
@@ -134,24 +142,28 @@ class BinGraph(idaapi.GraphViewer):
 
         chain, c_error = self.heap.tcache_chain(tcache_entry['next'], add_stop=False)
 
-        print(chain)
-
         for i, mem_addr in enumerate(chain):
             chunk_addr = self.heap.mem2chunk(mem_addr)
 
             try:
                 chunk_info = self.heap.get_chunk(chunk_addr)
-                chunk_info_str = str(chunk_info)
-                fd_index = chunk_info_str.find("fd: ")
-                if fd_index != -1:
-                    fd_end_index = chunk_info_str.find("\n", fd_index)
-                    chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
+                if config.libc_version >= "2.32":
+                    chunk_info_str = str(chunk_info)
+                    fd_index = chunk_info_str.find("fd: ")
+                    if fd_index != -1:
+                        fd_end_index = chunk_info_str.find("\n", fd_index)
+                        chunk_info_str = chunk_info_str[:fd_end_index] + "\n" + "fd Decrypt: " + hex((chunk_info.fd) ^ (chunk_addr >> 12)) + chunk_info_str[fd_end_index:]
 
-                prev_chunk = id_chunk
+                    prev_chunk = id_chunk
 
-                tcache_info = self.tcache_info(mem_addr, chunk_addr)
-                id_chunk = self.AddNode( (True, chunk_info_str, tcache_info, chunk_addr) )
-                self.AddEdge(prev_chunk, id_chunk)
+                    tcache_info = self.tcache_info(mem_addr, chunk_addr)
+                    id_chunk = self.AddNode( (True, chunk_info_str, tcache_info, chunk_addr) )
+                    self.AddEdge(prev_chunk, id_chunk)
+                else:
+                    prev_chunk = id_chunk
+                    tcache_info = self.tcache_info(mem_addr, chunk_addr)
+                    id_chunk = self.AddNode( (True, str(chunk_info), tcache_info, chunk_addr) )
+                    self.AddEdge(prev_chunk, id_chunk)
 
             except:
                 c_error = True

@@ -1,8 +1,10 @@
 {
-    "stop_during_tracing": true, 
-    "detect_double_frees_and_overlaps": true, 
+    "stop_during_tracing": true,
     "start_tracing_at_startup": true,
+    "detect_double_frees_and_overlaps": true,
     "filter_library_calls": false,
-    "hexdump_limit": 1024, 
-    "libc_offsets": {}
+    "hexdump_limit": 1024,
+    "libc_offsets": {
+        "glibc_version": "2.35"
+    }
 }
